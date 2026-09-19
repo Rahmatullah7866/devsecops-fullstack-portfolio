@@ -1,0 +1,11 @@
+*.pyc
+__pycache__/
+*.sqlite3
+venv/
+.env
+.coverage
+htmlcov/
+dist/
+build/
+node_modules/
+EOF
