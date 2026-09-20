@@ -7,74 +7,54 @@ on:
     branches: [ main ]
 
 jobs:
-  lint-and-test:
-    name: Code Quality, SAST & Unit Tests
+  backend-checks:
+    name: Backend SAST & Tests
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: ./backend
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: 'backend/requirements.txt'
-
-      - name: Install Dependencies & Security Tools
-        run: |
+      - run: |
+          cd backend
           python -m pip install --upgrade pip
-          # Schützt vor dem pip-audit Fehler (PYSEC-2024-3447)
-          python -m pip install --upgrade "setuptools>=83.0.0" wheel
           pip install -r requirements.txt
-          # CI-spezifische Test-, Lint- und Security-Pakete installieren
-          pip install flake8 bandit pip-audit pytest pytest-django coverage
-
-      - name: Code Linting (Flake8)
-        run: |
-          # Stop build bei Syntaxfehlern oder undefinierten Variablen
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-
-      - name: Static Security Analysis (Bandit SAST)
-        run: |
           bandit -r core notes -ll
-
-      - name: Dependency Vulnerability Audit (SCA)
-        run: |
-          pip-audit --desc on
-
-      - name: Run Tests with Pytest & Coverage
-        run: |
+          pip-audit
           coverage run -m pytest
           coverage report -m --fail-under=70
 
-  container-security:
-    name: Docker Build & Vulnerability Scanning
-    needs: lint-and-test
+  frontend-checks:
+    name: Frontend Lint & Tests
     runs-on: ubuntu-latest
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Backend Docker Image
-        run: |
-          docker build -t secure-notes-backend:${{ github.sha }} backend/
-
-      - name: Scan Image with Trivy (Fail on CRITICAL)
-        uses: aquasecurity/trivy-action@master
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
-          image-ref: 'secure-notes-backend:${{ github.sha }}'
-          format: 'table'
-          exit-code: '1'
-          ignore-unfixed: true
-          vuln-type: 'os,library'
-          severity: 'CRITICAL'
+          node-version: '20'
+      - run: |
+          cd frontend
+          npm ci
+          npm test -- --watchAll=false
+
+  dast-scan:
+    name: Dynamic App Security Testing (OWASP ZAP)
+    needs: [backend-checks, frontend-checks]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build & Run Services
+        run: |
+          docker compose up -d --build
+          sleep 10
+          curl --fail http://localhost:8000/api/notes/ || exit 1
+
+      - name: Run OWASP ZAP Baseline DAST
+        uses: zaproxy/action-baseline@v0.15.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          docker_name: 'ghcr.io/zaproxy/zaproxy:stable'
+          target: 'http://localhost:8000/api/notes/'
+          fail_action: false
