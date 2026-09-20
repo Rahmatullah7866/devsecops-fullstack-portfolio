@@ -16,14 +16,18 @@ spec:
         app: notes-frontend
         tier: web
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101 # default nginx user
-        runAsGroup: 101
+        runAsUser: 10101
+        runAsGroup: 10101
+        fsGroup: 10101
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: frontend
-          image: ghcr.io/rahmatullah7866/devsecops-fullstack-portfolio-frontend:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/rahmatullah7866/devsecops-fullstack-portfolio-frontend:1.0.0
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
           resources:
@@ -35,10 +39,36 @@ spec:
               cpu: "100m"
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
+          volumeMounts:
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+            - name: tmp-volume
+              mountPath: /tmp
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+        - name: tmp-volume
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service

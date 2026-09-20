@@ -16,15 +16,18 @@ spec:
         app: notes-backend
         tier: api
     spec:
+      automountServiceAccountToken: false
       securityContext:
         runAsNonRoot: true
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
+        runAsUser: 10001
+        runAsGroup: 10001
+        fsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: backend
-          image: ghcr.io/rahmatullah7866/devsecops-fullstack-portfolio-backend:latest
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/rahmatullah7866/devsecops-fullstack-portfolio-backend:1.0.0
+          imagePullPolicy: Always
           ports:
             - containerPort: 8000
           env:
@@ -41,10 +44,13 @@ spec:
               cpu: "250m"
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: false
+            readOnlyRootFilesystem: true
             capabilities:
               drop:
                 - ALL
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
           livenessProbe:
             httpGet:
               path: /api/notes/
@@ -57,6 +63,9 @@ spec:
               port: 8000
             initialDelaySeconds: 5
             periodSeconds: 5
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
