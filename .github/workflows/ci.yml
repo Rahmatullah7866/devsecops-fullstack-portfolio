@@ -17,7 +17,7 @@ jobs:
           python-version: '3.11'
       - run: |
           cd backend
-          python -m pip install --upgrade pip
+          python -m pip install --upgrade pip 'setuptools>=83.0.0'
           pip install -r requirements.txt
           flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
           bandit -r core notes -ll
@@ -35,7 +35,7 @@ jobs:
           node-version: '20'
       - run: |
           cd frontend
-          npm ci
+          npm install
           npm test -- --watchAll=false
 
   dast-scan:
