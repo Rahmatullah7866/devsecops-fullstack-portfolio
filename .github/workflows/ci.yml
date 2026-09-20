@@ -47,9 +47,8 @@ jobs:
       - name: Run Checkov K8s Scanner
         uses: bridgecrewio/checkov-action@master
         with:
-          framework: kubernetes
-          directory: k8s/
-          soft_fail: true # Logs all security violations and best-practice recommendations
+          config_file: .checkov.yaml
+          soft_fail: false # Enforce zero-tolerance blocking security gate
 
   dast-scan:
     name: Dynamic App Security Testing (OWASP ZAP)

@@ -1,0 +1,8 @@
+framework:
+  - kubernetes
+directory:
+  - k8s/
+skip-check:
+  # CKV_K8S_43 requires immutable SHA256 digests.
+  # Tags (:1.0.0) are maintained in Git; dynamic SHA digests get injected by CI/CD during deployment.
+  - CKV_K8S_43
