@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-isolation-policy
+spec:
+  podSelector:
+    matchLabels:
+      app: notes-backend
+  policyTypes:
+    - Ingress
+  ingress:
+    # Allow incoming traffic ONLY from pods labeled with app: notes-frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              app: notes-frontend
+      ports:
+        - protocol: TCP
+          port: 8000

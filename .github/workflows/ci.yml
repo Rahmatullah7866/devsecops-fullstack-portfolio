@@ -38,14 +38,26 @@ jobs:
           npm install
           npm test -- --watchAll=false
 
+  iac-security:
+    name: Infrastructure-as-Code Scan (Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Checkov K8s Scanner
+        uses: bridgecrewio/checkov-action@master
+        with:
+          framework: kubernetes
+          directory: k8s/
+          soft_fail: true # Logs all security violations and best-practice recommendations
+
   dast-scan:
     name: Dynamic App Security Testing (OWASP ZAP)
-    needs: [backend-checks, frontend-checks]
+    needs: [backend-checks, frontend-checks, iac-security]
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
-
     steps:
       - uses: actions/checkout@v4
 

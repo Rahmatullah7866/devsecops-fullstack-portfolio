@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notes-frontend
+  labels:
+    app.kubernetes.io/name: notes-frontend
+    tier: web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: notes-frontend
+  template:
+    metadata:
+      labels:
+        app: notes-frontend
+        tier: web
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101 # default nginx user
+        runAsGroup: 101
+      containers:
+        - name: frontend
+          image: ghcr.io/rahmatullah7866/devsecops-fullstack-portfolio-frontend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "50m"
+            limits:
+              memory: "128Mi"
+              cpu: "100m"
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: notes-frontend
+  labels:
+    app.kubernetes.io/name: notes-frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: notes-frontend
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
