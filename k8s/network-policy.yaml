@@ -2,6 +2,7 @@ apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
   name: backend-isolation-policy
+  namespace: secure-notes
 spec:
   podSelector:
     matchLabels:
@@ -9,7 +10,6 @@ spec:
   policyTypes:
     - Ingress
   ingress:
-    # Allow incoming traffic ONLY from pods labeled with app: notes-frontend
     - from:
         - podSelector:
             matchLabels:
@@ -17,3 +17,38 @@ spec:
       ports:
         - protocol: TCP
           port: 8000
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-network-policy
+  namespace: secure-notes
+spec:
+  podSelector:
+    matchLabels:
+      app: notes-frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - ports:
+        - protocol: TCP
+          port: 8080
+  egress:
+    # Allow frontend to talk only to backend pods on port 8000
+    - to:
+        - podSelector:
+            matchLabels:
+              app: notes-backend
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Allow DNS resolution
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
