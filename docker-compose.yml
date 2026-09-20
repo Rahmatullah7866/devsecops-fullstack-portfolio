@@ -6,6 +6,9 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: notes_backend
+    command: >
+      sh -c "python manage.py migrate &&
+             gunicorn --bind 0.0.0.0:8000 core.wsgi:application"
     environment:
       - DJANGO_DEBUG=False
       - DJANGO_ALLOWED_HOSTS=localhost 127.0.0.1 backend

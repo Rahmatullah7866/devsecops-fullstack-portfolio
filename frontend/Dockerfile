@@ -2,7 +2,9 @@
 FROM node:20-alpine AS build-stage
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+
+RUN npm install
+
 COPY . .
 RUN npm run build
 
@@ -11,7 +13,6 @@ FROM nginx:alpine-slim
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY --from=build-stage /app/build /usr/share/nginx/html
 
-# Grant write permissions for non-root user in runtime folders
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html && \
     chown -R nginx:nginx /var/cache/nginx && \
